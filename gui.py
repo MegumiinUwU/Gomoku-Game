@@ -124,10 +124,9 @@ class GomokuGUI:
         if self.game_mode == "ai_vs_ai":
             self.status_label.configure(text="AI vs AI Game Starting...")
             self.root.after(1000, self.make_ai_move)
-        # If AI plays first (as Player 1), have it make the first move
-        elif self.game_mode == "ai_vs_human" and self.board.current_player == Board.BLACK:
-            self.status_label.configure(text="AI is thinking...")
-            self.root.after(500, self.make_ai_move)
+        # If AI plays second (as Player 2), wait for human's first move
+        elif self.game_mode == "ai_vs_human":
+            self.status_label.configure(text="Your Turn (Black)")
         
     def create_frames(self):
         """Create main frames for the UI"""
@@ -323,7 +322,9 @@ class GomokuGUI:
     def update_status(self):
         """Update the status label based on game state"""
         if self.board.game_over:
-            if self.board.winner == Board.BLACK:
+            if self.board.is_draw:
+                self.status_label.configure(text="Game Draw!")
+            elif self.board.winner == Board.BLACK:
                 self.status_label.configure(text="Player 1 Wins!")
             else:
                 self.status_label.configure(text="Player 2 Wins!")
@@ -335,8 +336,8 @@ class GomokuGUI:
                 else:
                     self.status_label.configure(text="Player 2's Turn")
             elif self.game_mode == "ai_vs_human":
-                if self.board.current_player == Board.BLACK:
-                    # AI is always player 1
+                if self.board.current_player == Board.WHITE:
+                    # AI is always player 2 (White)
                     self.status_label.configure(text="AI is thinking...")
                 else:
                     self.status_label.configure(text="Your Turn")
@@ -352,7 +353,7 @@ class GomokuGUI:
             return
             
         # If it's AI's turn in the current game mode, ignore clicks
-        if (self.game_mode == "ai_vs_human" and self.board.current_player == Board.BLACK) or \
+        if (self.game_mode == "ai_vs_human" and self.board.current_player == Board.WHITE) or \
            self.game_mode == "ai_vs_ai":
             return
             
@@ -365,7 +366,7 @@ class GomokuGUI:
                 
                 # If it's now AI's turn, make the AI move
                 if not self.board.game_over:
-                    if (self.game_mode == "ai_vs_human" and self.board.current_player == Board.BLACK) or \
+                    if (self.game_mode == "ai_vs_human" and self.board.current_player == Board.WHITE) or \
                        self.game_mode == "ai_vs_ai":
                         self.root.after(500, self.make_ai_move)
     
@@ -421,8 +422,7 @@ class GomokuGUI:
         if not self.board.game_over:
             if self.game_mode == "ai_vs_ai":
                 self.root.after(1000, self.make_ai_move)
-            elif self.game_mode == "ai_vs_human" and self.board.current_player == Board.BLACK:
-                self.root.after(500, self.make_ai_move)
+            # Human now plays first in ai_vs_human mode, so no need to start AI move
     
     def undo_move(self):
         """Undo the last move"""
@@ -432,7 +432,7 @@ class GomokuGUI:
         if self.game_mode == "ai_vs_ai":
             self.board.undo_move()
             self.board.undo_move()
-        # For human vs AI, undo twice if it's AI's turn (to get back to human's turn)
+        # For human vs AI, undo twice if it's human's turn (to get back to human's turn)
         elif self.game_mode == "ai_vs_human" and self.board.current_player == Board.BLACK:
             self.board.undo_move()
             self.board.undo_move()
@@ -445,12 +445,20 @@ class GomokuGUI:
     def update_turn_indicator(self):
         """Update the turn label and image to show Player 1/2 and their stone image"""
         if self.board.current_player == Board.BLACK:
-            player_text = "AI" if self.game_mode in ["ai_vs_human", "ai_vs_ai"] else "Player 1"
+            if self.game_mode == "ai_vs_ai":
+                player_text = "AI"
+            else:
+                player_text = "Player 1" if self.game_mode == "human_vs_human" else "You"
             self.turn_label.configure(text=player_text)
             self.turn_img_label.configure(image=self.tk_player1_img)
             self.turn_img_label.image = self.tk_player1_img
         else:
-            player_text = "AI" if self.game_mode == "ai_vs_ai" else "Player 2"
+            if self.game_mode == "ai_vs_human":
+                player_text = "AI"
+            elif self.game_mode == "ai_vs_ai":
+                player_text = "AI"
+            else:
+                player_text = "Player 2"
             self.turn_label.configure(text=player_text)
             self.turn_img_label.configure(image=self.tk_player2_img)
             self.turn_img_label.image = self.tk_player2_img

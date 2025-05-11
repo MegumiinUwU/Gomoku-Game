@@ -21,8 +21,10 @@ class Board:
         self.last_move = None
         self.game_over = False
         self.winner = None
+        self.is_draw = False
         self.moves_history = []
         self.winning_stones = []  # Track winning stones
+        self.move_count = 0  # Counter for total moves made
     
     def reset(self):
         """Reset the board to initial state."""
@@ -31,8 +33,10 @@ class Board:
         self.last_move = None
         self.game_over = False
         self.winner = None
+        self.is_draw = False
         self.moves_history = []
         self.winning_stones = []  # Reset winning stones
+        self.move_count = 0  # Reset move counter
     
     def make_move(self, row, col):
         """
@@ -53,11 +57,18 @@ class Board:
         self.board[row][col] = self.current_player
         self.last_move = (row, col)
         self.moves_history.append((row, col, self.current_player))
+        self.move_count += 1  # Increment move counter
         
         # Check if the game is over
         if self.check_win(row, col):
             self.game_over = True
             self.winner = self.current_player
+            return True
+        
+        # Check for draw - if all 196 positions (14x14 grid) are filled
+        if self.move_count >= 196:  # 14x14 playable grid
+            self.game_over = True
+            self.is_draw = True
             return True
             
         # Switch player
@@ -137,8 +148,8 @@ class Board:
             return []
             
         valid_moves = []
-        for row in range(self.size):
-            for col in range(self.size):
+        for row in range(self.size-1):
+            for col in range(self.size-1):
                 if self.board[row][col] == self.EMPTY:
                     valid_moves.append((row, col))
                     
@@ -159,6 +170,8 @@ class Board:
         self.current_player = player
         self.game_over = False
         self.winner = None
+        self.is_draw = False
+        self.move_count -= 1  # Decrement move counter
         
         if self.moves_history:
             self.last_move = (self.moves_history[-1][0], self.moves_history[-1][1])
@@ -194,8 +207,10 @@ class Board:
         new_board.last_move = self.last_move if self.last_move is None else tuple(self.last_move)
         new_board.game_over = self.game_over
         new_board.winner = self.winner
+        new_board.is_draw = self.is_draw
         new_board.moves_history = list(self.moves_history)
         new_board.winning_stones = list(self.winning_stones)
+        new_board.move_count = self.move_count
         return new_board
 
     def next(self, move):
