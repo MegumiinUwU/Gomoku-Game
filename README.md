@@ -1,8 +1,7 @@
-
 # To Do
 
-- [ ] Fix that main window closes when transferring to other window (not smooth UI)
-- [ ] Fix the image on main menu
+- [x] Fix that main window closes when transferring to other window (not smooth UI)
+- [x] Fix the image on main menu
 - [ ] Make the AI algorithms
 - [ ] Test all
 
@@ -52,8 +51,13 @@ python main.py
 - Click on the board to place a stone
 - Use the "New Game" button to reset the game
 - Use the "Undo Move" button to take back the last move
+- Use the "Main Menu" button to return to the main menu
 
+## Recent Fixes
 
+- Fixed window transition between main menu and game screens
+- Fixed image handling to prevent TkInter errors
+- Improved UI consistency and performance
 
 ## License
 

@@ -5,6 +5,9 @@ from PIL import Image, ImageTk
 from customtkinter import CTkImage
 import os
 
+# Keep global references to prevent garbage collection
+_images = {}
+
 class GomokuGUI:
     """
     GUI for Gomoku game using CustomTkinter
@@ -19,8 +22,14 @@ class GomokuGUI:
             board_size (int): Size of the board
             cell_size (int): Size of each cell in pixels
         """
+        global _images
         self.root = root
         self.root.title("Gomoku")
+        
+        # Make sure the root window is clear from any previous widgets
+        for widget in self.root.winfo_children():
+            widget.destroy()
+            
         self.board = Board(15)  # Only 15x15 playable
         self.cell_size = cell_size
         self.canvas_size = cell_size * board_size + 110
@@ -31,12 +40,28 @@ class GomokuGUI:
         p1_path = os.path.join(assets_dir, 'Player1.png')
         p2_path = os.path.join(assets_dir, 'Player2.png')
         img_size = cell_size - 6
-        self.player1_img = Image.open(p1_path).resize((img_size, img_size), Image.LANCZOS)
-        self.player2_img = Image.open(p2_path).resize((img_size, img_size), Image.LANCZOS)
-        self.tk_player1_img = CTkImage(light_image=self.player1_img, size=(img_size, img_size))
-        self.tk_player2_img = CTkImage(light_image=self.player2_img, size=(img_size, img_size))
-        self.tk_player1_img_canvas = ImageTk.PhotoImage(self.player1_img)
-        self.tk_player2_img_canvas = ImageTk.PhotoImage(self.player2_img)
+        
+        # Load and process images, storing in global dictionary
+        player1_img = Image.open(p1_path).resize((img_size, img_size), Image.LANCZOS)
+        player2_img = Image.open(p2_path).resize((img_size, img_size), Image.LANCZOS)
+        
+        _images['player1_img'] = player1_img
+        _images['player2_img'] = player2_img
+        
+        # Create CTk images
+        self.tk_player1_img = CTkImage(light_image=player1_img, size=(img_size, img_size))
+        self.tk_player2_img = CTkImage(light_image=player2_img, size=(img_size, img_size))
+        
+        # Create Tk images for canvas
+        self.tk_player1_img_canvas = ImageTk.PhotoImage(player1_img)
+        self.tk_player2_img_canvas = ImageTk.PhotoImage(player2_img)
+        
+        # Store CTk images
+        _images['tk_player1_img'] = self.tk_player1_img
+        _images['tk_player2_img'] = self.tk_player2_img
+        _images['tk_player1_img_canvas'] = self.tk_player1_img_canvas
+        _images['tk_player2_img_canvas'] = self.tk_player2_img_canvas
+        
         # Load and process background image
         bg2_path = os.path.join(assets_dir, 'Background2.png')
         bg_img = Image.open(bg2_path).convert('RGBA').resize((self.canvas_size, self.canvas_size), Image.LANCZOS)
@@ -46,15 +71,13 @@ class GomokuGUI:
         bg_img.putalpha(alpha)
         self.bg_img_canvas = ImageTk.PhotoImage(bg_img)
         
+        # Store background image
+        _images['bg_img'] = bg_img
+        _images['bg_img_canvas'] = self.bg_img_canvas
+        
         # Set up the color theme
         ctk.set_appearance_mode("dark")  # Options: "System", "Dark", "Light"
         ctk.set_default_color_theme("blue")
-        
-        # Configure root window with fixed dimensions
-        window_width = 1180
-        window_height = 650
-        self.root.geometry(f"{window_width}x{window_height}")
-        self.root.resizable(False, False)
         
         # Create frames
         self.create_frames()
@@ -76,16 +99,16 @@ class GomokuGUI:
         
     def create_frames(self):
         """Create main frames for the UI"""
-        # Main frame with two columns
-        self.main_frame = ctk.CTkFrame(self.root)
-        self.main_frame.pack(fill="both", expand=True, padx=10, pady=10)
+        # Main frame with two columns (takes up the entire window)
+        self.main_frame = ctk.CTkFrame(self.root, fg_color="#0a1026", corner_radius=0)
+        self.main_frame.pack(fill="both", expand=True)
         
-        # Left frame for the game board
-        self.board_frame = ctk.CTkFrame(self.main_frame)
+        # Layout frames for board and controls
+        self.board_frame = ctk.CTkFrame(self.main_frame, fg_color="#0a1026", corner_radius=0)
         self.board_frame.pack(side="left", fill="both", padx=10, pady=10)
         
         # Right frame for controls
-        self.control_frame = ctk.CTkFrame(self.main_frame)
+        self.control_frame = ctk.CTkFrame(self.main_frame, fg_color="#181c2b", corner_radius=18)
         self.control_frame.pack(side="right", fill="both", expand=True, padx=10, pady=10)
         
     def create_board_canvas(self):
@@ -107,9 +130,11 @@ class GomokuGUI:
         # Game info
         self.info_frame = ctk.CTkFrame(self.control_frame, fg_color="#181c2b")
         self.info_frame.pack(fill="x", padx=10, pady=10)
+        
         # Player turn label and image
         self.turn_frame = ctk.CTkFrame(self.info_frame, fg_color="#181c2b")
         self.turn_frame.pack(pady=(10, 0))
+        
         self.turn_label = ctk.CTkLabel(
             self.turn_frame, 
             text="Player 1", 
@@ -117,11 +142,13 @@ class GomokuGUI:
             text_color="#fff"
         )
         self.turn_label.pack(side="left", padx=(0, 8))
+        
         self.turn_img_label = ctk.CTkLabel(self.turn_frame, text="")
         self.turn_img_label.pack(side="left")
+        
         self.status_label = ctk.CTkLabel(
             self.info_frame, 
-            text="Game in progress",
+            text="Player 1's Turn",
             font=("Arial", 14),
             text_color="#00eaff"
         )
@@ -154,6 +181,36 @@ class GomokuGUI:
             text_color="black"
         )
         self.undo_button.pack(fill="x", pady=5)
+        
+        # Add Main Menu button
+        self.menu_button = ctk.CTkButton(
+            self.button_frame,
+            text="Main Menu",
+            command=self.return_to_menu,
+            font=("Arial", 14, "bold"),
+            height=40,
+            fg_color="#FFD700",  # Gold color
+            hover_color="#FFC000",
+            text_color="black"
+        )
+        self.menu_button.pack(fill="x", pady=5)
+        
+    def return_to_menu(self):
+        """Return to the main menu with smooth transition"""
+        # Similar to how the main menu transitions to the game, use a smooth transition
+        def go_to_menu():
+            # Import here to avoid circular imports
+            from main_menu import main_menu
+            
+            # Clear all widgets from the root window
+            for widget in self.root.winfo_children():
+                widget.destroy()
+                
+            # Call main_menu with the existing root window
+            main_menu(root=self.root)
+        
+        # Schedule the transition with a slight delay for visual feedback
+        self.root.after(100, go_to_menu)
         
     def draw_board(self):
         """Draw the board with grid lines and stones"""
@@ -281,19 +338,3 @@ class GomokuGUI:
             self.turn_label.configure(text="Player 2")
             self.turn_img_label.configure(image=self.tk_player2_img)
             self.turn_img_label.image = self.tk_player2_img
-
-
-def start_game(root=None):
-    """Start the Gomoku game. If root is provided, embed in that window."""
-    if root is None:
-        root = ctk.CTk()
-        app = GomokuGUI(root)
-        root.mainloop()
-    else:
-        # Clear the root window before embedding the game
-        for widget in root.winfo_children():
-            widget.destroy()
-        app = GomokuGUI(root)
-
-if __name__ == "__main__":
-    start_game() 
