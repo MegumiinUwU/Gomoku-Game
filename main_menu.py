@@ -2,34 +2,27 @@ import customtkinter as ctk
 import os
 from PIL import Image
 from customtkinter import CTkImage
-import sys
 
 # Keep global references to prevent garbage collection
 _images = {}
 
-def main_menu(root=None):
-    global _images
-    ctk.set_appearance_mode("dark")
-    ctk.set_default_color_theme("blue")
+def create_main_menu(root, show_game_callback):
+    """
+    Create the main menu UI
     
-    # Check if there's already a root window
-    if root is None:
-        root = ctk.CTk()
-        new_window = True
-    else:
-        # This is likely a callback from the game, use existing root
-        new_window = False
-        
-        # Clear any existing widgets
-        for widget in root.winfo_children():
-            widget.destroy()
-            
+    Args:
+        root: The root CTk window
+        show_game_callback: Function to call to transition to the game
+    """
+    global _images
+    
+    # Set the window title
     root.title("Gomoku - Main Menu")
-    window_width = 1180
-    window_height = 650
-    root.geometry(f"{window_width}x{window_height}")
-    root.resizable(False, False)
-
+    
+    # Calculate window dimensions
+    window_width = root.winfo_width()
+    window_height = root.winfo_height()
+    
     # Load background image
     assets_dir = os.path.join(os.path.dirname(__file__), 'Assets')
     bg2_path = os.path.join(assets_dir, 'Background1.png')
@@ -38,11 +31,11 @@ def main_menu(root=None):
     bg_img = Image.open(bg2_path).convert('RGBA').resize((window_width, window_height), Image.LANCZOS)
     # Apply transparency
     alpha = bg_img.split()[3]
-    alpha = alpha.point(lambda p: int(p * 0.6))
+    alpha = alpha.point(lambda p: int(p * 0.8))
     bg_img.putalpha(alpha)
     
     # Create CTkImage (proper way for CustomTkinter)
-    ctk_bg_img = CTkImage(light_image=bg_img, dark_image=bg_img, size=(window_width, window_height))
+    ctk_bg_img = CTkImage(light_image=bg_img, dark_image=bg_img, size=(window_width-80, window_height-80))
     # Store reference to prevent garbage collection
     _images['bg_img'] = bg_img
     _images['ctk_bg_img'] = ctk_bg_img
@@ -66,55 +59,39 @@ def main_menu(root=None):
     btn_fg = "#00eaff"
     btn_hover = "#00b8d4"
 
-    def fade_and_transition_to_game(game_mode="human_vs_human"):
-        """Smooth transition to game with fade effect while keeping the window open"""
-        # Simple transition by hiding the menu and loading the game
-        def start_game():
-            # Clear everything from root window
-            for widget in root.winfo_children():
-                widget.destroy()
-                
-            # Load the game in the same window
-            load_game(game_mode)
+    # Button callbacks
+    def start_human_vs_human():
+        show_game_callback("human_vs_human")
         
-        def load_game(mode):
-            # Change the window title
-            root.title("Gomoku - Game")
-            
-            if mode == "human_vs_human":
-                # Import here to avoid circular imports
-                from gui import GomokuGUI
-                # Create the game in the existing window
-                game = GomokuGUI(root)
-            elif mode == "ai_vs_human":
-                # Future implementation
-                pass
-            elif mode == "ai_vs_ai":
-                # Future implementation
-                pass
+    def start_ai_vs_human():
+        show_game_callback("ai_vs_human")
         
-        # Schedule the transition with a slight delay for visual feedback
-        menu_frame.update()
-        root.after(100, start_game)
+    def start_ai_vs_ai():
+        show_game_callback("ai_vs_ai")
 
+    # Create buttons
     btn1 = ctk.CTkButton(menu_frame, text="Human vs Human", font=btn_font, height=50, 
                          fg_color=btn_fg, hover_color=btn_hover, text_color="black", 
-                         command=lambda: fade_and_transition_to_game("human_vs_human"))
+                         command=start_human_vs_human)
     btn1.pack(fill="x", padx=40, pady=10)
 
     btn2 = ctk.CTkButton(menu_frame, text="AI vs Human", font=btn_font, height=50, 
                          fg_color=btn_fg, hover_color=btn_hover, text_color="black", 
-                         command=lambda: fade_and_transition_to_game("ai_vs_human"), state="normal")
+                         command=start_ai_vs_human, state="normal")
     btn2.pack(fill="x", padx=40, pady=10)
 
     btn3 = ctk.CTkButton(menu_frame, text="AI vs AI", font=btn_font, height=50, 
                          fg_color=btn_fg, hover_color=btn_hover, text_color="black", 
-                         command=lambda: fade_and_transition_to_game("ai_vs_ai"), state="normal")
+                         command=start_ai_vs_ai, state="normal")
     btn3.pack(fill="x", padx=40, pady=10)
 
-    # Only start mainloop if this is a new window
-    if new_window:
-        root.mainloop()
+# For backward compatibility
+def main_menu():
+    print("WARNING: This function is deprecated. Use create_main_menu instead.")
+    root = ctk.CTk()
+    create_main_menu(root, lambda mode: print(f"Game mode selected: {mode}"))
+    root.mainloop()
 
 if __name__ == "__main__":
+    print("WARNING: main_menu.py should not be run directly!")
     main_menu()

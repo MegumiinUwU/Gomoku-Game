@@ -8,27 +8,42 @@ import os
 # Keep global references to prevent garbage collection
 _images = {}
 
+def create_game_ui(root, return_to_menu_callback, game_mode="human_vs_human"):
+    """
+    Create the game UI
+    
+    Args:
+        root: The root CTk window
+        return_to_menu_callback: Function to call to return to main menu
+        game_mode: The game mode to initialize
+    """
+    # Create a GomokuGUI instance but don't expose it directly
+    game = GomokuGUI(root, return_to_menu_callback, game_mode)
+    return game
+
 class GomokuGUI:
     """
     GUI for Gomoku game using CustomTkinter
     """
     
-    def __init__(self, root, board_size=16, cell_size=45):
+    def __init__(self, root, return_to_menu_callback, game_mode="human_vs_human", board_size=16, cell_size=45):
         """
         Initialize the GUI.
         
         Args:
             root: CustomTkinter root window
+            return_to_menu_callback: Function to call to return to main menu
+            game_mode: The game mode to initialize
             board_size (int): Size of the board
             cell_size (int): Size of each cell in pixels
         """
         global _images
         self.root = root
         self.root.title("Gomoku")
+        self.return_to_menu_callback = return_to_menu_callback
         
-        # Make sure the root window is clear from any previous widgets
-        for widget in self.root.winfo_children():
-            widget.destroy()
+        # Store the game mode
+        self.game_mode = game_mode
             
         self.board = Board(15)  # Only 15x15 playable
         self.cell_size = cell_size
@@ -196,21 +211,9 @@ class GomokuGUI:
         self.menu_button.pack(fill="x", pady=5)
         
     def return_to_menu(self):
-        """Return to the main menu with smooth transition"""
-        # Similar to how the main menu transitions to the game, use a smooth transition
-        def go_to_menu():
-            # Import here to avoid circular imports
-            from main_menu import main_menu
-            
-            # Clear all widgets from the root window
-            for widget in self.root.winfo_children():
-                widget.destroy()
-                
-            # Call main_menu with the existing root window
-            main_menu(root=self.root)
-        
-        # Schedule the transition with a slight delay for visual feedback
-        self.root.after(100, go_to_menu)
+        """Return to the main menu"""
+        # Simply call the callback
+        self.return_to_menu_callback()
         
     def draw_board(self):
         """Draw the board with grid lines and stones"""
