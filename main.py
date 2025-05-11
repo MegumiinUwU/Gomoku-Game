@@ -7,7 +7,7 @@ the goal of getting five stones in a row (horizontally, vertically, or diagonall
 """
 
 import sys
-from gui import start_game
+from main_menu import main_menu
 
 if __name__ == "__main__":
-    start_game() 
+    main_menu() 

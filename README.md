@@ -1,3 +1,16 @@
+
+# To Do
+
+- [ ] Fix that main window closes when transferring to other window (not smooth UI)
+- [ ] Fix the image on main menu
+- [ ] Make the AI algorithms
+- [ ] Test all
+
+
+
+
+
+
 # Gomoku Game
 
 A classic board game where players take turns placing stones on a grid, aiming to be the first to form an unbroken chain of five stones horizontally, vertically, or diagonally.
@@ -39,6 +52,7 @@ python main.py
 - Click on the board to place a stone
 - Use the "New Game" button to reset the game
 - Use the "Undo Move" button to take back the last move
+
 
 
 ## License

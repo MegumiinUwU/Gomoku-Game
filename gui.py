@@ -283,11 +283,17 @@ class GomokuGUI:
             self.turn_img_label.image = self.tk_player2_img
 
 
-def start_game():
-    """Start the Gomoku game"""
-    root = ctk.CTk()
-    app = GomokuGUI(root)
-    root.mainloop()
-    
+def start_game(root=None):
+    """Start the Gomoku game. If root is provided, embed in that window."""
+    if root is None:
+        root = ctk.CTk()
+        app = GomokuGUI(root)
+        root.mainloop()
+    else:
+        # Clear the root window before embedding the game
+        for widget in root.winfo_children():
+            widget.destroy()
+        app = GomokuGUI(root)
+
 if __name__ == "__main__":
     start_game() 
