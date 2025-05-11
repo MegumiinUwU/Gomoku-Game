@@ -4,6 +4,9 @@ import math
 from PIL import Image, ImageTk
 from customtkinter import CTkImage
 import os
+import threading
+import time
+from ai import get_best_move
 
 # Keep global references to prevent garbage collection
 _images = {}
@@ -44,6 +47,11 @@ class GomokuGUI:
         
         # Store the game mode
         self.game_mode = game_mode
+        
+        # AI settings
+        self.ai_thinking = False
+        self.ai_thread = None
+        self.ai_depth = 2  # AI search depth
             
         self.board = Board(15)  # Only 15x15 playable
         self.cell_size = cell_size
@@ -111,6 +119,15 @@ class GomokuGUI:
         
         # Draw the initial board
         self.draw_board()
+        
+        # Start AI vs AI game if that mode is selected
+        if self.game_mode == "ai_vs_ai":
+            self.status_label.configure(text="AI vs AI Game Starting...")
+            self.root.after(1000, self.make_ai_move)
+        # If AI plays first (as Player 1), have it make the first move
+        elif self.game_mode == "ai_vs_human" and self.board.current_player == Board.BLACK:
+            self.status_label.configure(text="AI is thinking...")
+            self.root.after(500, self.make_ai_move)
         
     def create_frames(self):
         """Create main frames for the UI"""
@@ -212,8 +229,16 @@ class GomokuGUI:
         
     def return_to_menu(self):
         """Return to the main menu"""
+        # Cancel any ongoing AI operations
+        self.stop_ai_thread()
         # Simply call the callback
         self.return_to_menu_callback()
+    
+    def stop_ai_thread(self):
+        """Stop any running AI thread"""
+        if self.ai_thread and self.ai_thread.is_alive():
+            self.ai_thinking = False
+            self.ai_thread.join(0.1)  # Try to join but don't block
         
     def draw_board(self):
         """Draw the board with grid lines and stones"""
@@ -303,41 +328,129 @@ class GomokuGUI:
             else:
                 self.status_label.configure(text="Player 2 Wins!")
         else:
-            if self.board.current_player == Board.BLACK:
-                self.status_label.configure(text="Player 1's Turn")
-            else:
-                self.status_label.configure(text="Player 2's Turn")
+            # Handle different game modes
+            if self.game_mode == "human_vs_human":
+                if self.board.current_player == Board.BLACK:
+                    self.status_label.configure(text="Player 1's Turn")
+                else:
+                    self.status_label.configure(text="Player 2's Turn")
+            elif self.game_mode == "ai_vs_human":
+                if self.board.current_player == Board.BLACK:
+                    # AI is always player 1
+                    self.status_label.configure(text="AI is thinking...")
+                else:
+                    self.status_label.configure(text="Your Turn")
+            elif self.game_mode == "ai_vs_ai":
+                if self.board.current_player == Board.BLACK:
+                    self.status_label.configure(text="AI Player 1 is thinking...")
+                else:
+                    self.status_label.configure(text="AI Player 2 is thinking...")
     
     def handle_click(self, event):
         """Handle click event on canvas"""
-        if self.board.game_over:
+        if self.board.game_over or self.ai_thinking:
             return
+            
+        # If it's AI's turn in the current game mode, ignore clicks
+        if (self.game_mode == "ai_vs_human" and self.board.current_player == Board.BLACK) or \
+           self.game_mode == "ai_vs_ai":
+            return
+            
         col = round((event.x - self.margin) / self.cell_size)
         row = round((event.y - self.margin) / self.cell_size)
         # Only allow play in 1-14 (inner 15x15)
         if 1 <= row < 15 and 1 <= col < 15:
             if self.board.make_move(row, col):
                 self.draw_board()
+                
+                # If it's now AI's turn, make the AI move
+                if not self.board.game_over:
+                    if (self.game_mode == "ai_vs_human" and self.board.current_player == Board.BLACK) or \
+                       self.game_mode == "ai_vs_ai":
+                        self.root.after(500, self.make_ai_move)
+    
+    def make_ai_move(self):
+        """Make an AI move"""
+        if self.board.game_over or self.ai_thinking:
+            return
+            
+        self.ai_thinking = True
+        self.update_status()  # Show thinking status
+        
+        # Use a thread to avoid blocking the GUI
+        self.ai_thread = threading.Thread(target=self._ai_move_thread)
+        self.ai_thread.daemon = True
+        self.ai_thread.start()
+    
+    def _ai_move_thread(self):
+        """Thread function to calculate and apply AI move"""
+        try:
+            # Choose AI color based on current player
+            ai_color = self.board.current_player
+            
+            # Get best move from AI algorithm
+            move, _ = get_best_move(self.board, self.ai_depth, ai_color)
+            
+            # Schedule the move to be made on the main GUI thread
+            self.root.after(0, lambda: self._apply_ai_move(move))
+        except Exception as e:
+            print(f"AI error: {e}")
+            self.ai_thinking = False
+    
+    def _apply_ai_move(self, move):
+        """Apply the AI move to the board (called from main thread)"""
+        if not self.board.game_over and move:
+            row, col = move
+            if self.board.make_move(row, col):
+                self.draw_board()
+                
+                # If it's AI vs AI and the game isn't over, schedule the next AI move
+                if self.game_mode == "ai_vs_ai" and not self.board.game_over:
+                    self.root.after(1000, self.make_ai_move)
+                    
+        self.ai_thinking = False
     
     def reset_game(self):
         """Reset the game"""
+        self.stop_ai_thread()  # Stop any running AI threads
         self.board.reset()
         self.draw_board()
         self.update_turn_indicator()
+        
+        # If AI is first player, start its move
+        if not self.board.game_over:
+            if self.game_mode == "ai_vs_ai":
+                self.root.after(1000, self.make_ai_move)
+            elif self.game_mode == "ai_vs_human" and self.board.current_player == Board.BLACK:
+                self.root.after(500, self.make_ai_move)
     
     def undo_move(self):
         """Undo the last move"""
-        if self.board.undo_move():
-            self.draw_board()
-            self.update_turn_indicator()
+        self.stop_ai_thread()  # Stop any running AI threads
+        
+        # For AI vs AI, undo twice to get back to the same player's turn
+        if self.game_mode == "ai_vs_ai":
+            self.board.undo_move()
+            self.board.undo_move()
+        # For human vs AI, undo twice if it's AI's turn (to get back to human's turn)
+        elif self.game_mode == "ai_vs_human" and self.board.current_player == Board.BLACK:
+            self.board.undo_move()
+            self.board.undo_move()
+        else:
+            self.board.undo_move()
+            
+        self.draw_board()
+        self.update_turn_indicator()
     
     def update_turn_indicator(self):
         """Update the turn label and image to show Player 1/2 and their stone image"""
         if self.board.current_player == Board.BLACK:
-            self.turn_label.configure(text="Player 1")
+            player_text = "AI" if self.game_mode in ["ai_vs_human", "ai_vs_ai"] else "Player 1"
+            self.turn_label.configure(text=player_text)
             self.turn_img_label.configure(image=self.tk_player1_img)
             self.turn_img_label.image = self.tk_player1_img
         else:
-            self.turn_label.configure(text="Player 2")
+            player_text = "AI" if self.game_mode == "ai_vs_ai" else "Player 2"
+            self.turn_label.configure(text=player_text)
             self.turn_img_label.configure(image=self.tk_player2_img)
             self.turn_img_label.image = self.tk_player2_img

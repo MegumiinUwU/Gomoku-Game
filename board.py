@@ -184,3 +184,22 @@ class Board:
             int: Current player (BLACK or WHITE)
         """
         return self.current_player 
+        
+    def copy(self):
+        """Return a deep copy of the board state for AI search."""
+        import copy
+        new_board = Board(self.size)
+        new_board.board = copy.deepcopy(self.board)
+        new_board.current_player = self.current_player
+        new_board.last_move = self.last_move if self.last_move is None else tuple(self.last_move)
+        new_board.game_over = self.game_over
+        new_board.winner = self.winner
+        new_board.moves_history = list(self.moves_history)
+        new_board.winning_stones = list(self.winning_stones)
+        return new_board
+
+    def next(self, move):
+        """Return a new Board with the move applied (for AI search)."""
+        new_board = self.copy()
+        new_board.make_move(*move)
+        return new_board 

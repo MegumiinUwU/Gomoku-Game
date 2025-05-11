@@ -2,7 +2,7 @@
 
 - [x] Fix that main window closes when transferring to other window (not smooth UI)
 - [x] Fix the image on main menu
-- [ ] Make the AI algorithms
+- [x] Make the AI algorithms
 - [ ] Test all
 
 
