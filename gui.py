@@ -389,8 +389,13 @@ class GomokuGUI:
             # Choose AI color based on current player
             ai_color = self.board.current_player
             
+            if ai_color == Board.WHITE:
+                engine = 'minimax'
+            else:
+                engine = 'alphaBetaPruning'
+
             # Get best move from AI algorithm
-            move, _ = get_best_move(self.board, self.ai_depth, ai_color)
+            move, _ = get_best_move(self.board, self.ai_depth, ai_color, engine)
             
             # Schedule the move to be made on the main GUI thread
             self.root.after(0, lambda: self._apply_ai_move(move))
