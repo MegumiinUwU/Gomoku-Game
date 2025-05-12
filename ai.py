@@ -80,3 +80,22 @@ def second_move(state):
     i2 = 1 if i <= size // 2 else -1
     j2 = 1 if j <= size // 2 else -1
     return (i + i2, j + j2), 2
+
+
+
+def min_max(state,depth,ai_color):
+    if depth == 0 or state.game_over:
+        return evaluation_state(state,ai_color)
+    maximizing = (state.current_player == ai_color)
+    final_value = -float('inf') if maximizing else float('inf')
+    if maximizing:
+        for move in state.get_valid_moves():
+            next_state = state.copy()
+            next_state.make_move(*move)
+            final_value = max(final_value, min_max(next_state, depth - 1, ai_color))
+    else:
+        for move in state.get_valid_moves():
+            next_state = state.copy()
+            next_state.make_move(*move)
+            final_value = min(final_value, min_max(next_state, depth - 1, ai_color))
+    return final_value
