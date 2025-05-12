@@ -52,6 +52,15 @@ class GomokuGUI:
         self.ai_thinking = False
         self.ai_thread = None
         self.ai_depth = 2  # AI search depth
+        
+        # Determine which AI algorithm to use
+        self.use_alphabeta = True
+        self.ai_vs_ai_mixed = False
+        
+        if game_mode == "ai_vs_human_minmax":
+            self.use_alphabeta = False
+        elif game_mode == "ai_vs_ai_minmax":
+            self.ai_vs_ai_mixed = True  # First player uses MinMax, second uses Alpha-Beta
             
         self.board = Board(15)  # Only 15x15 playable
         self.cell_size = cell_size
@@ -121,12 +130,18 @@ class GomokuGUI:
         self.draw_board()
         
         # Start AI vs AI game if that mode is selected
-        if self.game_mode == "ai_vs_ai":
-            self.status_label.configure(text="AI vs AI Game Starting...")
+        if self.game_mode == "ai_vs_ai" or self.game_mode == "ai_vs_ai_minmax":
+            if self.game_mode == "ai_vs_ai_minmax":
+                self.status_label.configure(text="MiniMax vs Alpha-Beta Game Starting...")
+            else:
+                self.status_label.configure(text="AI vs AI Game Starting...")
             self.root.after(1000, self.make_ai_move)
         # If AI plays second (as Player 2), wait for human's first move
-        elif self.game_mode == "ai_vs_human":
-            self.status_label.configure(text="Your Turn (Black)")
+        elif self.game_mode == "ai_vs_human" or self.game_mode == "ai_vs_human_minmax":
+            if self.game_mode == "ai_vs_human_minmax":
+                self.status_label.configure(text="Your Turn vs MiniMax (Black)")
+            else:
+                self.status_label.configure(text="Your Turn vs Alpha-Beta (Black)")
         
     def create_frames(self):
         """Create main frames for the UI"""
@@ -325,9 +340,15 @@ class GomokuGUI:
             if self.board.is_draw:
                 self.status_label.configure(text="Game Draw!")
             elif self.board.winner == Board.BLACK:
-                self.status_label.configure(text="Player 1 Wins!")
+                if self.game_mode == "ai_vs_ai_minmax":
+                    self.status_label.configure(text="MiniMax AI Wins!")
+                else:
+                    self.status_label.configure(text="Player 1 Wins!")
             else:
-                self.status_label.configure(text="Player 2 Wins!")
+                if self.game_mode == "ai_vs_ai_minmax":
+                    self.status_label.configure(text="Alpha-Beta AI Wins!")
+                else:
+                    self.status_label.configure(text="Player 2 Wins!")
         else:
             # Handle different game modes
             if self.game_mode == "human_vs_human":
@@ -335,17 +356,24 @@ class GomokuGUI:
                     self.status_label.configure(text="Player 1's Turn")
                 else:
                     self.status_label.configure(text="Player 2's Turn")
-            elif self.game_mode == "ai_vs_human":
+            elif self.game_mode == "ai_vs_human" or self.game_mode == "ai_vs_human_minmax":
                 if self.board.current_player == Board.WHITE:
                     # AI is always player 2 (White)
-                    self.status_label.configure(text="AI is thinking...")
+                    ai_type = "MiniMax" if self.game_mode == "ai_vs_human_minmax" else "Alpha-Beta"
+                    self.status_label.configure(text=f"{ai_type} AI is thinking...")
                 else:
                     self.status_label.configure(text="Your Turn")
-            elif self.game_mode == "ai_vs_ai":
-                if self.board.current_player == Board.BLACK:
-                    self.status_label.configure(text="AI Player 1 is thinking...")
+            elif self.game_mode == "ai_vs_ai" or self.game_mode == "ai_vs_ai_minmax":
+                if self.game_mode == "ai_vs_ai_minmax":
+                    if self.board.current_player == Board.BLACK:
+                        self.status_label.configure(text="MiniMax AI is thinking...")
+                    else:
+                        self.status_label.configure(text="Alpha-Beta AI is thinking...")
                 else:
-                    self.status_label.configure(text="AI Player 2 is thinking...")
+                    if self.board.current_player == Board.BLACK:
+                        self.status_label.configure(text="Alpha-Beta AI 1 is thinking...")
+                    else:
+                        self.status_label.configure(text="Alpha-Beta AI 2 is thinking...")
     
     def handle_click(self, event):
         """Handle click event on canvas"""
@@ -354,7 +382,8 @@ class GomokuGUI:
             
         # If it's AI's turn in the current game mode, ignore clicks
         if (self.game_mode == "ai_vs_human" and self.board.current_player == Board.WHITE) or \
-           self.game_mode == "ai_vs_ai":
+           (self.game_mode == "ai_vs_human_minmax" and self.board.current_player == Board.WHITE) or \
+           self.game_mode == "ai_vs_ai" or self.game_mode == "ai_vs_ai_minmax":
             return
             
         col = round((event.x - self.margin) / self.cell_size)
@@ -367,7 +396,8 @@ class GomokuGUI:
                 # If it's now AI's turn, make the AI move
                 if not self.board.game_over:
                     if (self.game_mode == "ai_vs_human" and self.board.current_player == Board.WHITE) or \
-                       self.game_mode == "ai_vs_ai":
+                       (self.game_mode == "ai_vs_human_minmax" and self.board.current_player == Board.WHITE) or \
+                       self.game_mode == "ai_vs_ai" or self.game_mode == "ai_vs_ai_minmax":
                         self.root.after(500, self.make_ai_move)
     
     def make_ai_move(self):
@@ -389,13 +419,18 @@ class GomokuGUI:
             # Choose AI color based on current player
             ai_color = self.board.current_player
             
-            if ai_color == Board.WHITE:
-                engine = 'minimax'
-            else:
-                engine = 'alphaBetaPruning'
-
+            # Determine which algorithm to use
+            use_alphabeta = self.use_alphabeta
+            
+            # For AI vs AI with mixed algorithms (MiniMax vs Alpha-Beta)
+            if self.ai_vs_ai_mixed:
+                if ai_color == Board.BLACK:
+                    use_alphabeta = False  # Black player uses MiniMax
+                else:
+                    use_alphabeta = True   # White player uses Alpha-Beta
+            
             # Get best move from AI algorithm
-            move, _ = get_best_move(self.board, self.ai_depth, ai_color, engine)
+            move, _ = get_best_move(self.board, self.ai_depth, ai_color, use_alphabeta)
             
             # Schedule the move to be made on the main GUI thread
             self.root.after(0, lambda: self._apply_ai_move(move))
@@ -411,7 +446,7 @@ class GomokuGUI:
                 self.draw_board()
                 
                 # If it's AI vs AI and the game isn't over, schedule the next AI move
-                if self.game_mode == "ai_vs_ai" and not self.board.game_over:
+                if (self.game_mode == "ai_vs_ai" or self.game_mode == "ai_vs_ai_minmax") and not self.board.game_over:
                     self.root.after(1000, self.make_ai_move)
                     
         self.ai_thinking = False
@@ -425,7 +460,7 @@ class GomokuGUI:
         
         # If AI is first player, start its move
         if not self.board.game_over:
-            if self.game_mode == "ai_vs_ai":
+            if self.game_mode == "ai_vs_ai" or self.game_mode == "ai_vs_ai_minmax":
                 self.root.after(1000, self.make_ai_move)
             # Human now plays first in ai_vs_human mode, so no need to start AI move
     
@@ -434,11 +469,11 @@ class GomokuGUI:
         self.stop_ai_thread()  # Stop any running AI threads
         
         # For AI vs AI, undo twice to get back to the same player's turn
-        if self.game_mode == "ai_vs_ai":
+        if self.game_mode == "ai_vs_ai" or self.game_mode == "ai_vs_ai_minmax":
             self.board.undo_move()
             self.board.undo_move()
         # For human vs AI, undo twice if it's human's turn (to get back to human's turn)
-        elif self.game_mode == "ai_vs_human" and self.board.current_player == Board.BLACK:
+        elif (self.game_mode == "ai_vs_human" or self.game_mode == "ai_vs_human_minmax") and self.board.current_player == Board.BLACK:
             self.board.undo_move()
             self.board.undo_move()
         else:
@@ -451,7 +486,9 @@ class GomokuGUI:
         """Update the turn label and image to show Player 1/2 and their stone image"""
         if self.board.current_player == Board.BLACK:
             if self.game_mode == "ai_vs_ai":
-                player_text = "AI"
+                player_text = "AI 1"
+            elif self.game_mode == "ai_vs_ai_minmax":
+                player_text = "MiniMax AI"
             else:
                 player_text = "Player 1" if self.game_mode == "human_vs_human" else "You"
             self.turn_label.configure(text=player_text)
@@ -459,9 +496,13 @@ class GomokuGUI:
             self.turn_img_label.image = self.tk_player1_img
         else:
             if self.game_mode == "ai_vs_human":
-                player_text = "AI"
+                player_text = "Alpha-Beta AI"
+            elif self.game_mode == "ai_vs_human_minmax":
+                player_text = "MiniMax AI"
             elif self.game_mode == "ai_vs_ai":
-                player_text = "AI"
+                player_text = "AI 2"
+            elif self.game_mode == "ai_vs_ai_minmax":
+                player_text = "Alpha-Beta AI"
             else:
                 player_text = "Player 2"
             self.turn_label.configure(text=player_text)

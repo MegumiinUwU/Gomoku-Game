@@ -6,7 +6,19 @@ def get_opponent(color):
     return Board.WHITE if color == Board.BLACK else Board.BLACK
 
 
-def get_best_move(state, depth, ai_color, engine='minimax'):
+def get_best_move(state, depth, ai_color, use_alphabeta=True):
+    """
+    Get the best move for the AI
+    
+    Args:
+        state: Current board state
+        depth: Search depth
+        ai_color: AI player's color
+        use_alphabeta: Whether to use alpha-beta pruning (default: True)
+        
+    Returns:
+        tuple: (best_move, best_value)
+    """
     values = np.array(state.board)
     best_value = -float('inf')
     best_move = (-1, -1)
@@ -21,10 +33,11 @@ def get_best_move(state, depth, ai_color, engine='minimax'):
 
     for move_n_value in top_moves:
         move = move_n_value[0]
-        if engine == 'minimax':
-            value = minimax(state.next(move), depth - 1, ai_color)
-        else:
+        if use_alphabeta:
             value = alphaBetaPruning(state.next(move), -float('inf'), float('inf'), depth - 1, ai_color)
+        else:
+            value = minimax(state.next(move), depth - 1, ai_color)
+            
         if value > best_value:
             best_value = value
             best_move = move
@@ -72,6 +85,33 @@ def alphaBetaPruning(state, alpha, beta, depth, ai_color):
         return value
 
 
+def minimax(state, depth, ai_color):
+    """
+    Minimax algorithm without alpha-beta pruning
+    """
+    if depth == 0 or state.game_over:
+        return evaluation_state(state, ai_color)
+
+    maximizing = (state.current_player == ai_color)
+    
+    if maximizing:
+        # Maximizing player's turn
+        value = -float('inf')
+        for move in state.get_valid_moves():
+            next_state = state.copy()
+            next_state.make_move(*move)
+            value = max(value, minimax(next_state, depth - 1, ai_color))
+        return value
+    else:
+        # Minimizing player's turn
+        value = float('inf')
+        for move in state.get_valid_moves():
+            next_state = state.copy()
+            next_state.make_move(*move)
+            value = min(value, minimax(next_state, depth - 1, ai_color))
+        return value
+
+
 def first_move(state):
     x = state.size // 2
     return (np.random.choice([x - 1, x, x + 1]), np.random.choice([x - 1, x, x + 1])), 1
@@ -83,23 +123,3 @@ def second_move(state):
     i2 = 1 if i <= size // 2 else -1
     j2 = 1 if j <= size // 2 else -1
     return (i + i2, j + j2), 2
-
-def minimax(state, depth, ai_color):
-    if depth == 0 or state.game_over:
-        return evaluation_state(state, ai_color)
-    
-    maximizing = (state.current_player == ai_color)
-    if maximizing:
-        value = -float('inf')
-        for move in state.get_valid_moves():
-            next_state = state.copy()
-            next_state.make_move(*move)
-            value = max(value, minimax(next_state, depth - 1, ai_color))
-        return value
-    else:
-        value = float('inf')
-        for move in state.get_valid_moves():
-            next_state = state.copy()
-            next_state.make_move(*move)
-            value = min(value, minimax(next_state, depth - 1, ai_color))
-        return value

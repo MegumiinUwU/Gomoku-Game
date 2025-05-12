@@ -1,22 +1,22 @@
-# To Do
-
-- [x] Fix that main window closes when transferring to other window (not smooth UI)
-- [x] Fix the image on main menu
-- [x] Add draw detection when board is full
-- [x] Implement Alpha-Beta pruning for AI decision making
-- [ ] Implement MinMax for AI decision making
-- [ ] Test all
-
-
-
-
-
-
 # Gomoku Game
 
 A classic board game where players take turns placing stones on a grid, aiming to be the first to form an unbroken chain of five stones horizontally, vertically, or diagonally.
+This was a project for the course **CS361: Artificial Intelligence** at **FCAI, Cairo University**.
 
+## Tech
 
+- **Frontend**: CustomTkinter
+- **AI Algorithms**: 
+  - MiniMax Algorithm
+  - Alpha-Beta Pruning
+- **Core Libraries**:
+  - Python 3.6+
+  - NumPy (for AI calculations)
+  - Pillow (for image processing)
+  - CustomTkinter 5.2.1+
+
+## Game Screenshot
+![Main menu and gameplay screenshot](Assets/README_image.gif)
 
 ## Requirements
 
@@ -28,9 +28,13 @@ A classic board game where players take turns placing stones on a grid, aiming t
 
 ## Installation
 
-1. Clone or download this repository.
-2. Install the required packages:
+1. Clone or download this repository:
+```bash
+git clone https://github.com/MegumiinUwU/Gomoku-Game.git
+cd Gomoku-Game
+```
 
+2. Install the required packages:
 ```bash
 pip install -r requirements.txt
 ```
@@ -38,7 +42,6 @@ pip install -r requirements.txt
 ## How to Play
 
 1. Run the game:
-
 ```bash
 python main.py
 ```
@@ -59,19 +62,27 @@ python main.py
 
 ## Game Modes
 
-The game supports three different modes:
+The game supports various different modes:
 - Human vs Human: Two players taking turns
-- AI vs Human: Play against the computer AI
-- AI vs AI: Watch the computer play against itself with two different algorithms
+- AI vs Human: 
+  - Play against the MiniMax algorithm
+  - Play against the Alpha-Beta pruning algorithm
+- AI vs AI: 
+  - Watch MiniMax play against Alpha-Beta pruning
+  - Watch Alpha-Beta pruning play against itself
 
 ## AI Implementation
 
+The game includes two AI algorithms:
 
+1. **MiniMax Algorithm**: A traditional recursive algorithm that explores all possible game states to find the optimal move, considering all possible counter-moves from the opponent.
 
-## Recent Fixes
+2. **Alpha-Beta Pruning**: An optimization of the MiniMax algorithm that eliminates branches that cannot influence the final decision, which results in faster computation while maintaining the same results.
 
+Both algorithms evaluate the board based on patterns of consecutive stones, potential threats, and possible winning configurations.
 
 
 ## License
 
 This project is open source and available under the MIT License. 
+
