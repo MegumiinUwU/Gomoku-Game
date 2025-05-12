@@ -3,6 +3,12 @@
 A classic board game where players take turns placing stones on a grid, aiming to be the first to form an unbroken chain of five stones horizontally, vertically, or diagonally.
 This was a project for the course **CS361: Artificial Intelligence** at **FCAI, Cairo University**.
 
+<div align="center">
+  <img src="https://counter.seku.su/cmoe?name=GOMOkuMegumiinUwU&theme=r34" />
+</div>
+
+
+
 ## Tech
 
 - **Frontend**: CustomTkinter
