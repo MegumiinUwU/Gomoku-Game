@@ -4,9 +4,8 @@ A classic board game where players take turns placing stones on a grid, aiming t
 This was a project for the course **CS361: Artificial Intelligence** at **FCAI, Cairo University**.
 
 <div align="center">
-  <img src="https://hits.dwyl.com/MegumiinUwU/Gomoku-Game.svg?style=flat-square&show=unique" alt="visitor count" />
+  <img src="https://visitor-badge.laobi.icu/badge?page_id=MegumiinUwU.Gomoku-Game" alt="visitor count" />
 </div>
-
 
 
 ## Tech
