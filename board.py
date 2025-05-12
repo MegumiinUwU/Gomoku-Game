@@ -148,8 +148,8 @@ class Board:
             return []
             
         valid_moves = []
-        for row in range(self.size-1):
-            for col in range(self.size-1):
+        for row in range(1, 15):  
+            for col in range(1, 15):  
                 if self.board[row][col] == self.EMPTY:
                     valid_moves.append((row, col))
                     
