@@ -51,7 +51,7 @@ class GomokuGUI:
         # AI settings
         self.ai_thinking = False
         self.ai_thread = None
-        self.ai_depth = 3  # AI search depth
+        self.ai_depth = 2 # AI search depth
         
         # Determine which AI algorithm to use
         self.use_alphabeta = True

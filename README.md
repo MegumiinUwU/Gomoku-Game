@@ -86,6 +86,21 @@ The game includes two AI algorithms:
 Both algorithms evaluate the board based on patterns of consecutive stones, potential threats, and possible winning configurations.
 
 
+## BONUS Optimization
+
+The game includes an optimized version of the AI algorithms in `ai_2.py`. To use this optimized version, simply change the import in `gui.py` from `from ai import get_best_move` to `from ai_2 import get_best_move`. The optimized version includes several performance improvements:
+
+1. **Transposition Table**: Caches evaluated positions to avoid recalculating the same board states
+2. **Iterative Deepening**: Gradually increases search depth while respecting time limits
+3. **Move Ordering**: Prioritizes promising moves to improve alpha-beta pruning efficiency
+4. **In-place Operations**: Uses make_move/undo_move instead of copying board states
+5. **Early Game Optimizations**: Special handling for first and second moves
+6. **Time Management**: Enforces time limits to ensure responsive gameplay
+7. **Move Counter**: Tracks number of positions evaluated for performance monitoring
+
+These optimizations can significantly improve the AI's performance, especially in complex positions, while maintaining the same strategic quality of play.
+
+
 ## License
 
 This project is open source and available under the MIT License. 
